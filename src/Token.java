@@ -12,7 +12,7 @@ public class Token {
         return "Token{" +
                 "key=" + key +
                 ", value='" + value + '\'' +
-                '}';
+                '}'+'\n';
     }
 
     public TokenType getKey() {

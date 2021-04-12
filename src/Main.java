@@ -1,6 +1,8 @@
 public class Main {
     public static void main(String[] args) throws LexicalException {
         LexicalAnalyzer lexicalAnalyzer = new LexicalAnalyzer("a.txt");
-        System.out.println(lexicalAnalyzer.generateTokens());
+        Grammar grammar = new Grammar("grammar.txt");
+        grammar.printGrammar();
+        grammar.check(lexicalAnalyzer.generateTokens());
     }
 }

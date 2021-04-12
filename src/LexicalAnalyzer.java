@@ -36,13 +36,13 @@ public class LexicalAnalyzer {
         Pattern pattern = Pattern.compile("[0-9]+");
         Matcher matcher = pattern.matcher(string);
         if (matcher.matches()) {
-            return new Token(TokenType.NUMBER, matcher.group(0));
+            return new Token(TokenType.NUMBER, "simpleexp");
         }
 
         pattern = Pattern.compile("[a-zA-Z]([a-zA-Z0-9])*");
         matcher = pattern.matcher(string);
         if (matcher.matches()) {
-            return new Token(TokenType.ID, matcher.group(0));
+            return new Token(TokenType.ID, "ID");
         }
 
         throw new LexicalException(string, String.valueOf(line), String.valueOf(column));
@@ -80,11 +80,6 @@ public class LexicalAnalyzer {
                     }
                     substringStartIndex = i + 1;
                     tokens.add(getTokenFromString(String.valueOf(currentChar), lineNumber, i));
-
-
-
-
-
                 }
             }
             buffer = currentSplittedString.substring(substringStartIndex);
@@ -100,7 +95,7 @@ public class LexicalAnalyzer {
         ArrayList<Token> tokens = new ArrayList<>();
         String currentLine = null;
         int lineNumber = 0;
-        while ((currentLine = helper.getNextLine()) != null) {
+        while ((currentLine = helper.getNextLineWithoutMultipleSpaces()) != null) {
             tokens.addAll(getTokensFromLine(currentLine, lineNumber));
             lineNumber++;
         }

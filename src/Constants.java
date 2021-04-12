@@ -50,7 +50,8 @@ public class Constants {
             entry(" ",TokenType.DELIMITER),
             entry(",",TokenType.DELIMITER),
             entry(";",TokenType.LINE_END),
-            entry("!",TokenType.OPERATOR)
+            entry("!",TokenType.OPERATOR),
+            entry(":",TokenType.DELIMITER)
     );
 
 }

@@ -5,7 +5,6 @@ import java.util.Scanner;
 
 public class Helper {
 
-
     Scanner scanner;
     String fileName;
 
@@ -27,9 +26,17 @@ public class Helper {
         return string.replaceAll("( )+", " ");
     }
 
-    public String getNextLine(){
+    public String getNextLineWithoutMultipleSpaces(){
         if(scanner.hasNextLine()){
             return removeWhiteSpaces(scanner.nextLine());
+        }else{
+            return null;
+        }
+    }
+
+    public String getNextLine(){
+        if(scanner.hasNextLine()){
+            return scanner.nextLine();
         }else{
             return null;
         }

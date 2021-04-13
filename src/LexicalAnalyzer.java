@@ -36,7 +36,7 @@ public class LexicalAnalyzer {
         Pattern pattern = Pattern.compile("[0-9]+");
         Matcher matcher = pattern.matcher(string);
         if (matcher.matches()) {
-            return new Token(TokenType.NUMBER, "simpleexp");
+            return new Token(TokenType.NUMBER, "INTNUM");
         }
 
         pattern = Pattern.compile("[a-zA-Z]([a-zA-Z0-9])*");

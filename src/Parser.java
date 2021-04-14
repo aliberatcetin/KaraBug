@@ -228,7 +228,29 @@ public class Parser {
 
         int fallbackIndex = tokenIndex;
 
+        boolean isValid = returnSt1() || returnSt2();
+
+        if(isValid) return true;
+        tokenIndex = fallbackIndex;
+        return false;
+    }
+
+    private boolean returnSt1() {
+
+        int fallbackIndex = tokenIndex;
+
         boolean isValid = checkTerminal("return") && parseArithmeticExp() && checkTerminal(";");
+
+        if(isValid) return true;
+        tokenIndex = fallbackIndex;
+        return false;
+    }
+
+    private boolean returnSt2() {
+
+        int fallbackIndex = tokenIndex;
+
+        boolean isValid = checkTerminal("return") && checkTerminal(";");
 
         if(isValid) return true;
         tokenIndex = fallbackIndex;
@@ -263,6 +285,28 @@ public class Parser {
 
         int fallbackIndex = tokenIndex;
 
+        boolean isValid = funcst2() || funcst1();
+
+        if(isValid) return true;
+
+        tokenIndex = fallbackIndex;
+        return false;
+    }
+
+    private boolean funcst2(){
+        int fallbackIndex = tokenIndex;
+
+        boolean isValid = checkTerminal("func") && checkTerminal("ID") && checkTerminal("(")  && checkTerminal(")") && checkTerminal(":") && parseType() && parseBlock();
+
+        if(isValid) return true;
+
+        tokenIndex = fallbackIndex;
+        return false;
+    }
+
+    private boolean funcst1(){
+        int fallbackIndex = tokenIndex;
+
         boolean isValid = checkTerminal("func") && checkTerminal("ID") && checkTerminal("(") && parseParams() && checkTerminal(")") && checkTerminal(":") && parseType() && parseBlock();
 
         if(isValid) return true;
@@ -275,7 +319,7 @@ public class Parser {
 
         int fallbackIndex = tokenIndex;
 
-        boolean isValid = parseFuncDecl() || params1();
+        boolean isValid = params1() || parseFuncDecl();
 
         if(isValid) return true;
         tokenIndex = fallbackIndex;
@@ -391,7 +435,7 @@ public class Parser {
 
         int fallbackIndex = tokenIndex;
 
-        boolean isValid = funcCallParams1() || nullTerminal();
+        boolean isValid =  funcCallParams1() || parseSimpleExp();
         if(isValid) return true;
         tokenIndex = fallbackIndex;
         return false;
@@ -431,8 +475,8 @@ public class Parser {
     }
     private boolean parseSimpleExp(){
         int fallbackIndex = tokenIndex;
-        boolean isValid = checkTerminal("ID") || checkTerminal("INTNUM") || checkTerminal("FLOATNUM") || checkTerminal("BOOLVAL")
-                || checkTerminal("CHARACTER") || parseSimpleExp1() || parseSimpleExp2() || parseSimpleExp3();
+        boolean isValid = parseSimpleExp2() || parseSimpleExp3()||checkTerminal("ID") || checkTerminal("INTNUM") || checkTerminal("FLOATNUM") || checkTerminal("BOOLVAL")
+                || checkTerminal("CHARACTER") || parseSimpleExp1();
         if(isValid) return true;
         tokenIndex = fallbackIndex;
         return false;

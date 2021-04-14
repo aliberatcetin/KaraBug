@@ -6,21 +6,19 @@ block->begin sts end
 sts-> st sts|$
 st->ifst|whilest|assignmentst|returnst
 ifst->if (booleanexp) ifblock
-ifblock -> begin sts elseblock end
+ifblock -> begin sts else block end
 elseblock -> else sts | $
 whilest->while (booleanexp) block
-funcst->func ID(params):type block
-returnst->return arithmeticexp;
+funcst->func ID(params):type block||func ID():type block
 type->int|float|void|bool|char
+returnst->return arithmeticexp; | return;
 assignmentst->ID = arithmeticexp; | ID;
-
 arithmeticexp->multexp and arithmeticexp|multexp or arithmeticexp|multexp - arithmeticexp|
 multexp + arithmeticexp|multexp % arithmeticexp|multexp
-
 multexp->simpleexp * multexp|simpleexp / multexp|simpleexp
-simpleexp->ID|INTNUM|FLOATNUM|BOOLVAL|CHARACTER|(arithmeticexp)|ID(funccallparams) | ID()
-funccalparams->simepleexp, funccallparams|$
+simpleexp->ID(funccallparams)||ID()||ID|INTNUM|FLOATNUM|BOOLVAL|CHARACTER|(arithmeticexp)
+funccalparams->simepleexp, funccallparams||simepleexp
 booleanexp->arithmeticexp boolop arithmeticexp
 boolop->>|<|==|<=|>=|!=
-params->funcdecl | funcdecl, params
+params->funcdecl, params || funcdecl
 funcdecl -> int ID|float ID|bool ID|char ID

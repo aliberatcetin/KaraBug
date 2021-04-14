@@ -1,0 +1,7 @@
+func a(int a,int b):int
+begin
+
+return;
+end
+
+int a=b(1);

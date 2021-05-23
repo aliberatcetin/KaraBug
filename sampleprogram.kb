@@ -1,7 +1,19 @@
-func a(int a,int b):int
+?func sum(int a,int b):int
 begin
-
-return;
+    return a+b;
 end
 
-int a=b(1);
+func isEqual(int num1,int num2):bool
+begin
+    if(num1==num2)
+    begin
+        return 'a';
+    else
+        return 'a';
+    end
+end
+int sumResult;
+int five=5;
+int six;
+six=6;
+sumResult = sum(five,six);

@@ -27,22 +27,43 @@ public class LexicalAnalyzer {
         return false;
     }
 
+    public String getValueOfConstant(String string) {
+        Pattern pattern = Pattern.compile("[-]?[0-9]+");
+        Matcher matcher = pattern.matcher(string);
+        if (matcher.matches()) {
+            return "INTNUM";
+        }
+        pattern = Pattern.compile("[-]?[0-9]+\\.[0-9]+");
+        matcher = pattern.matcher(string);
+        if (matcher.matches()) {
+            return "FLOATNUM";
+        }
+        if (string.equals("true") || string.equals("false")) {
+            return "BOOLVAL";
+        }
+        pattern = Pattern.compile("['].[']");
+        matcher = pattern.matcher(string);
+        if (matcher.matches()) {
+            return "CHARACTER";
+        }
+        pattern = Pattern.compile("[a-zA-Z]([a-zA-Z0-9])*");
+        matcher = pattern.matcher(string);
+        if (matcher.matches()) {
+            return "ID";
+        }
+
+        return null;
+    }
+
     public Token getTokenFromString(String string, int line, int column) throws LexicalException {
         TokenType tokenType = Constants.tokenDict.get(string);
         if (tokenType != null) {
             return new Token(tokenType, string);
         }
 
-        Pattern pattern = Pattern.compile("[0-9]+");
-        Matcher matcher = pattern.matcher(string);
-        if (matcher.matches()) {
-            return new Token(TokenType.NUMBER, "INTNUM");
-        }
-
-        pattern = Pattern.compile("[a-zA-Z]([a-zA-Z0-9])*");
-        matcher = pattern.matcher(string);
-        if (matcher.matches()) {
-            return new Token(TokenType.ID, "ID");
+        String constantValueType = getValueOfConstant(string);
+        if(constantValueType!=null){
+            return new Token(TokenType.NUMBER,constantValueType);
         }
 
         throw new LexicalException(string, String.valueOf(line), String.valueOf(column));
@@ -66,14 +87,14 @@ public class LexicalAnalyzer {
                     if (buffer.length() != 0) {
                         Token token = getTokenFromString(buffer, lineNumber, i);
                         tokens.add(token);
+
                     }
-                    substringStartIndex++;
                     if (i != currentSplittedString.length() - 1 && isComposedConditionOperator(currentChar, currentSplittedString.charAt(i + 1))) {
-                        buffer = currentSplittedString.substring(substringStartIndex, substringStartIndex + 2);
-                        if (buffer.length() != 0) {
-                            Token token = getTokenFromString(buffer, lineNumber, i);
-                            tokens.add(token);
-                        }
+
+                        buffer = currentSplittedString.substring(i, i + 2);
+                        Token token = getTokenFromString(buffer, lineNumber, i);
+                        tokens.add(token);
+
                         substringStartIndex = i + 2;
                         i = i + 1;
                         continue;

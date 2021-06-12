@@ -9,7 +9,7 @@ ifst->if (booleanexp) ifblock
 ifblock -> begin sts else block end
 elseblock -> else sts | $
 whilest->while (booleanexp) block
-funcst->func ID(params):type block||func ID():type block
+funcst->func ID(params):type block| func ID():type block
 type->int|float|void|bool|char
 returnst->return arithmeticexp; | return;
 assignmentst->ID = arithmeticexp; | ID;

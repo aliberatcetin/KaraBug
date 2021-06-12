@@ -6,6 +6,8 @@ import java.util.regex.Pattern;
 public class LexicalAnalyzer {
     Helper helper;
 
+    ArrayList<String> fails = new ArrayList<>();
+
     public LexicalAnalyzer(String fileName) {
         helper = new Helper(fileName);
     }
@@ -58,15 +60,22 @@ public class LexicalAnalyzer {
     public Token getTokenFromString(String string, int line, int column) throws LexicalException {
         TokenType tokenType = Constants.tokenDict.get(string);
         if (tokenType != null) {
-            return new Token(tokenType, string);
+            return new Token(tokenType, string,line,column);
         }
 
         String constantValueType = getValueOfConstant(string);
         if(constantValueType!=null){
-            return new Token(TokenType.NUMBER,constantValueType);
+            return new Token(TokenType.NUMBER,constantValueType,line,column);
         }
 
-        throw new LexicalException(string, String.valueOf(line), String.valueOf(column));
+
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("Unexcepted literal: "+ string);
+        stringBuilder.append(" At Line: "+String.valueOf(line));
+        stringBuilder.append("Column: "+String.valueOf(column));
+        fails.add(stringBuilder.toString());
+
+        return new Token(TokenType.FAULT,"fault",line,column);
     }
 
     public ArrayList<Token> getTokensFromLine(String string, int lineNumber) throws LexicalException {
@@ -119,6 +128,13 @@ public class LexicalAnalyzer {
         while ((currentLine = helper.getNextLineWithoutMultipleSpaces()) != null) {
             tokens.addAll(getTokensFromLine(currentLine, lineNumber));
             lineNumber++;
+        }
+
+        if(fails.size()>0){
+            for(String error:fails){
+                System.out.println(error);
+            }
+            throw new LexicalException("Code fails to compile with several errors");
         }
         return tokens;
     }

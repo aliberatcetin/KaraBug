@@ -13,7 +13,8 @@ enum TokenType {
     KEYWORD,
     COMMENT,
     DELIMITER,
-    LINE_END
+    LINE_END,
+    FAULT
 }
 
 public class Constants {

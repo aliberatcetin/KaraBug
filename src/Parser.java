@@ -37,16 +37,23 @@ public class Parser {
 
         boolean isValidProgram = parseSource();
 
+        if(tokenIndex < tokens.size()) {
+            failedTokens.add(new FailedTokens(tokens.get(tokenIndex), "Syntax error"));
+            semiColonRecovery(tokens.get(tokenIndex));
+            if(tokenIndex < tokens.size()) parse(tokens);
+            terminate();
+        }
+
         if (isValidProgram && tokenIndex == tokens.size() && failedTokens.size() == 0) {
             System.out.println("Program compiled successfully");
         } else {
             terminate();
-            System.out.println("Failed");
         }
 
     }
 
     public void terminate() {
+        System.out.println("Failed");
         for (FailedTokens failedToken : failedTokens) {
             System.err.println("Exception at line: " + failedToken.getToken().getLine() + " at col: " + failedToken.getToken().getColumn() + " " + failedToken.getMessage());
         }
@@ -81,17 +88,17 @@ public class Parser {
         terminate();
     }
 
-    public void panicRecovery(String until) {
+    public void semiColonRecovery(Token token) {
 
         while (tokenIndex < tokens.size()) {
-            if (until.equals(tokens.get(tokenIndex).getValue())) {
-                return;
-            } else {
+            if (";".equals(tokens.get(tokenIndex).getValue())) {
                 tokenIndex++;
+                return;
             }
+            tokenIndex++;
         }
-        System.out.println(String.format("%s is missing", until));
-        System.exit(1);
+        failedTokens.add(new FailedTokens(token, "semi colon missing"));
+        terminate();
     }
 
 
@@ -178,9 +185,17 @@ public class Parser {
 
     private boolean parseSt() {
 
-        boolean isValid = parseIfSt() || parseWhileSt() || parseAssignmentSt() || parseReturnSt();
+        boolean isValid = parseIfSt() || parseWhileSt() || parseAssignmentSt() || parseReturnSt() || parseFuncCallSt();
 
         if (isValid) return true;
+        return false;
+    }
+
+    private boolean parseFuncCallSt() {
+        int fallbackIndex = tokenIndex;
+        boolean isValid = parseFuncCallExp() && checkTerminal(";");
+        if (isValid) return true;
+        tokenIndex = fallbackIndex;
         return false;
     }
 
@@ -190,20 +205,20 @@ public class Parser {
         if(tokenIndex<tokens.size()){
             token = tokens.get(tokenIndex);
         }
-
+        boolean flag = false;
         boolean existsIf = checkTerminal("if");
-
         boolean isValid = existsIf && checkTerminal("(") && parseBooleanExp() && checkTerminal(")") && parseIfBlock();
 
         if (isValid) return true;
         else if (existsIf) {
             failedTokens.add(new FailedTokens(token, "if syntax fail"));
             endRecovery(token);
+            flag = true;
         } else {
             tokenIndex = fallbackIndex;
         }
 
-        return false;
+        return flag;
     }
 
     private boolean parseIfBlock() {
@@ -355,32 +370,34 @@ public class Parser {
 
     private boolean parseFuncSt() {
 
-
-        boolean isValid = funcst2() || funcst1();
-
-        if (isValid) return true;
-
-        return false;
-    }
-
-    private boolean funcst2() {
-
         int fallbackIndex = tokenIndex;
         Token token=null;
         if(tokenIndex<tokens.size()){
             token = tokens.get(tokenIndex);
         }
+        boolean flag = false;
 
         boolean funcExists = checkTerminal("func");
-        boolean isValid =  funcExists && checkTerminal("ID") && checkTerminal("(") && checkTerminal(")") && checkTerminal(":") && parseType() && parseBlock();
+        boolean isValid = funcExists && (funcst2() || funcst1());
 
         if (isValid) return true;
         else if (funcExists) {
             failedTokens.add(new FailedTokens(token, "function syntax fail"));
             endRecovery(token);
+            flag = true;
         } else {
             tokenIndex = fallbackIndex;
         }
+        return flag;
+    }
+
+    private boolean funcst2() {
+
+        int fallbackIndex = tokenIndex;
+        boolean isValid =  checkTerminal("ID") && checkTerminal("(") && checkTerminal(")") && checkTerminal(":") && parseType() && parseBlock();
+
+        if (isValid) return true;
+        tokenIndex = fallbackIndex;
         return false;
 
     }
@@ -388,7 +405,7 @@ public class Parser {
     private boolean funcst1(){
         int fallbackIndex = tokenIndex;
 
-        boolean isValid = checkTerminal("func") && checkTerminal("ID") && checkTerminal("(") && parseParams() && checkTerminal(")") && checkTerminal(":") && parseType() && parseBlock();
+        boolean isValid = checkTerminal("ID") && checkTerminal("(") && parseParams() && checkTerminal(")") && checkTerminal(":") && parseType() && parseBlock();
 
         if(isValid) return true;
 
@@ -436,7 +453,6 @@ public class Parser {
 
     private boolean decl(String type) {
         int fallbackIndex = tokenIndex;
-
 
         boolean isValid = checkTerminal(type) && parseAssignmentSt();
 
@@ -552,7 +568,7 @@ public class Parser {
 
     private boolean parseSimpleExp() {
         int fallbackIndex = tokenIndex;
-        boolean isValid = parseSimpleExp2() || parseSimpleExp3() || checkTerminal("ID") || checkTerminal("INTNUM") || checkTerminal("FLOATNUM") || checkTerminal("BOOLVAL")
+        boolean isValid = parseFuncCallExp() || checkTerminal("ID") || checkTerminal("INTNUM") || checkTerminal("FLOATNUM") || checkTerminal("BOOLVAL")
                 || checkTerminal("CHARACTER") || parseSimpleExp1();
         if (isValid) return true;
         tokenIndex = fallbackIndex;
@@ -567,7 +583,7 @@ public class Parser {
         return false;
     }
 
-    private boolean parseSimpleExp2() {
+    private boolean parseFuncCallExp1() {
         int fallbackIndex = tokenIndex;
         boolean isValid = checkTerminal("ID") && checkTerminal("(") && parseFuncCallParams() && checkTerminal(")");
         if (isValid) return true;
@@ -575,11 +591,18 @@ public class Parser {
         return false;
     }
 
-    private boolean parseSimpleExp3() {
+    private boolean parseFuncCallExp2() {
         int fallbackIndex = tokenIndex;
         boolean isValid = checkTerminal("ID") && checkTerminal("(") && checkTerminal(")");
         if (isValid) return true;
         tokenIndex = fallbackIndex;
+        return false;
+    }
+
+    private boolean parseFuncCallExp() {
+
+        boolean isValid = parseFuncCallExp1() || parseFuncCallExp2();
+        if (isValid) return true;
         return false;
     }
 }

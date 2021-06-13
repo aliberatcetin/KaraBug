@@ -4,21 +4,23 @@ funcs->funcst funcs|$
 decls->decl decls|$
 block->begin sts end
 sts-> st sts|$
-st->ifst|whilest|assignmentst|returnst
+st->ifst|whilest|assignmentst|returnst|funCallSt
 ifst->if (booleanexp) ifblock
+funCallSt -> funcCallExp;
 ifblock -> begin sts else block end
 elseblock -> else sts | $
 whilest->while (booleanexp) block
-funcst->func ID(params):type block| func ID():type block
+funcst->func ID(params):type block | func ID():type block
 type->int|float|void|bool|char
 returnst->return arithmeticexp; | return;
 assignmentst->ID = arithmeticexp; | ID;
 arithmeticexp->multexp and arithmeticexp|multexp or arithmeticexp|multexp - arithmeticexp|
 multexp + arithmeticexp|multexp % arithmeticexp|multexp
 multexp->simpleexp * multexp|simpleexp / multexp|simpleexp
-simpleexp->ID(funccallparams)||ID()||ID|INTNUM|FLOATNUM|BOOLVAL|CHARACTER|(arithmeticexp)
+simpleexp->funcCallExp|ID|INTNUM|FLOATNUM|BOOLVAL|CHARACTER|(arithmeticexp)
 funccalparams->simepleexp, funccallparams||simepleexp
 booleanexp->arithmeticexp boolop arithmeticexp
+funcCallExp -> ID(funccallparams)|ID()
 boolop->>|<|==|<=|>=|!=
 params->funcdecl, params || funcdecl
 funcdecl -> int ID|float ID|bool ID|char ID

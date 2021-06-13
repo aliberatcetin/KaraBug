@@ -117,9 +117,9 @@ public class Parser {
             return false;
         }
 
-        String expectedTerminal = tokens.get(tokenIndex).getValue();
+        Token expectedToken = tokens.get(tokenIndex);
 
-        boolean equals = expectedTerminal.equals(terminal);
+        boolean equals = expectedToken.getValue().equals(terminal) || expectedToken.getKey().name().equals(terminal);
         if (equals) {
             Node node = new Node(parent.getChilds().size() + 1, null, tokens.get(tokenIndex));
             parent.addChild(node);
@@ -669,7 +669,7 @@ public class Parser {
         Node node = addNewNonTerminalToParent(parent, "simpleexp");
 
         boolean isValid = parseFuncCallExp(node) || checkTerminal(node, "ID") || checkTerminal(node, "INTNUM") || checkTerminal(node, "FLOATNUM") || checkTerminal(node, "BOOLVAL")
-                || checkTerminal(node, "CHARACTER") || parseSimpleExp1(node);
+                || checkTerminal(node, "CHARACTER") || checkTerminal(node, "STRING")|| parseSimpleExp1(node);
         if (isValid) return true;
         parent.removeChild(node);
         tokenIndex = fallbackIndex;

@@ -11,8 +11,13 @@ enum TokenType {
     OPERATOR,
     PARENTHESES,
     KEYWORD,
+    INTNUM,
+    FLOATNUM,
+    CHARACTER,
+    BOOLVAL,
     COMMENT,
     DELIMITER,
+    STRING,
     LINE_END,
     FAULT
 }

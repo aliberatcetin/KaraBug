@@ -28,6 +28,8 @@ public class Parser {
 
     ArrayList<FailedTokens> failedTokens = new ArrayList<>();
 
+    Node root = new Node(0, "source", null);
+
 
     private Integer tokenIndex = 0;
 
@@ -35,12 +37,13 @@ public class Parser {
 
         this.tokens = tokens;
 
+
         boolean isValidProgram = parseSource();
 
-        if(tokenIndex < tokens.size()) {
+        if (tokenIndex < tokens.size()) {
             failedTokens.add(new FailedTokens(tokens.get(tokenIndex), "Syntax error"));
             semiColonRecovery(tokens.get(tokenIndex));
-            if(tokenIndex < tokens.size()) parse(tokens);
+            if (tokenIndex < tokens.size()) parse(tokens);
             terminate();
         }
 
@@ -60,7 +63,12 @@ public class Parser {
         System.exit(1);
     }
 
-    ;
+
+    public Node addNewNonTerminalToParent(Node parent, String nonterminalName) {
+        Node newNode = new Node(parent.getChilds().size() + 1, nonterminalName, null);
+        parent.addChild(newNode);
+        return newNode;
+    }
 
 
     public void endRecovery(Token token) {
@@ -102,7 +110,8 @@ public class Parser {
     }
 
 
-    private boolean checkTerminal(String terminal) {
+    private boolean checkTerminal(Node parent, String terminal) {
+
 
         if (tokenIndex == tokens.size()) {
             return false;
@@ -111,14 +120,18 @@ public class Parser {
         String expectedTerminal = tokens.get(tokenIndex).getValue();
 
         boolean equals = expectedTerminal.equals(terminal);
-        if (equals) tokenIndex++;
+        if (equals) {
+            Node node = new Node(parent.getChilds().size() + 1, null, tokens.get(tokenIndex));
+            parent.addChild(node);
+            tokenIndex++;
+        }
 
         return equals;
     }
 
     private boolean parseSource() {
 
-        return parseFuncs() && parseDecls() && parseSts();
+        return parseFuncs(root) && parseDecls(root) && parseSts(root);
     }
 
     private boolean nullTerminal() {
@@ -126,10 +139,25 @@ public class Parser {
         return true;
     }
 
-    private boolean parseFuncs() {
+    private boolean parseFuncs(Node parent) {
+
+        Node node = new Node(parent.getChilds().size() + 1, "funcs", null);
+        parent.addChild(node);
+
+        boolean isValid = funcs1(node) || nullTerminal();
 
 
-        boolean isValid = funcs1() || nullTerminal();
+        if (isValid) return true;
+
+        parent.removeChild(node);
+
+        return false;
+    }
+
+    private boolean funcs1(Node parent) {
+
+
+        boolean isValid = parseFuncSt(parent) && parseFuncs(parent);
 
         if (isValid) return true;
 
@@ -137,77 +165,86 @@ public class Parser {
         return false;
     }
 
-    private boolean funcs1() {
+    private boolean parseDecls(Node parent) {
 
+        Node node = new Node(parent.getChilds().size() + 1, "decls", null);
+        parent.addChild(node);
 
-        boolean isValid = parseFuncSt() && parseFuncs();
-
-        if (isValid) return true;
-
-        return false;
-    }
-
-    private boolean parseDecls() {
-
-
-        boolean isValid = decls1() || nullTerminal();
+        boolean isValid = decls1(node) || nullTerminal();
 
         if (isValid) return true;
+
+
+        parent.removeChild(node);
 
         return false;
 
     }
 
-    private boolean decls1() {
+    private boolean decls1(Node parent) {
 
-        boolean isValid = parseDecl() && parseDecls();
-
-        if (isValid) return true;
-        return false;
-    }
-
-    private boolean parseSts() {
-
-
-        boolean isValid = sts1() || nullTerminal();
-        if (isValid) return true;
-        return false;
-    }
-
-    private boolean sts1() {
-
-
-        boolean isValid = parseSt() && parseSts();
+        boolean isValid = parseDecl(parent) && parseDecls(parent);
 
         if (isValid) return true;
         return false;
     }
 
-    private boolean parseSt() {
+    private boolean parseSts(Node parent) {
 
-        boolean isValid = parseIfSt() || parseWhileSt() || parseAssignmentSt() || parseReturnSt() || parseFuncCallSt();
+        Node node = new Node(parent.getChilds().size() + 1, "sts", null);
+        parent.addChild(node);
+
+        boolean isValid = sts1(node) || nullTerminal();
+        if (isValid) return true;
+        parent.removeChild(node);
+        return false;
+    }
+
+    private boolean sts1(Node parent) {
+
+        boolean isValid = parseSt(parent) && parseSts(parent);
 
         if (isValid) return true;
         return false;
     }
 
-    private boolean parseFuncCallSt() {
+    private boolean parseSt(Node parent) {
+
+        Node node = addNewNonTerminalToParent(parent, "st");
+        parent.addChild(node);
+
+        boolean isValid = parseIfSt(node) || parseWhileSt(node) || parseAssignmentSt(node) || parseReturnSt(node) || parseFuncCallSt(node);
+
+        if (isValid) return true;
+        parent.removeChild(node);
+        return false;
+    }
+
+    private boolean parseFuncCallSt(Node parent) {
         int fallbackIndex = tokenIndex;
-        boolean isValid = parseFuncCallExp() && checkTerminal(";");
+        Node node = addNewNonTerminalToParent(parent,"funccalst");
+
+        boolean isValid = parseFuncCallExp(node) && checkTerminal(node,";");
         if (isValid) return true;
         tokenIndex = fallbackIndex;
+        parent.removeChild(node);
         return false;
     }
 
-    private boolean parseIfSt() {
+    private boolean parseIfSt(Node parent) {
+
         int fallbackIndex = tokenIndex;
-        Token token=null;
-        if(tokenIndex<tokens.size()){
+        Token token = null;
+        if (tokenIndex < tokens.size()) {
             token = tokens.get(tokenIndex);
         }
+
+        Node node = new Node(parent.getChilds().size() + 1, "if", null);
+        parent.addChild(node);
+
         boolean flag = false;
-        boolean existsIf = checkTerminal("if");
-        boolean isValid = existsIf && checkTerminal("(") && parseBooleanExp() && checkTerminal(")") && parseIfBlock();
+        boolean existsIf = checkTerminal(node, "if");
+        boolean isValid = existsIf && checkTerminal(node, "(") && parseBooleanExp(node) && checkTerminal(node, ")") && parseIfBlock(node);
 
         if (isValid) return true;
         else if (existsIf) {
@@ -215,132 +252,151 @@ public class Parser {
             endRecovery(token);
             flag = true;
         } else {
+            parent.removeChild(node);
             tokenIndex = fallbackIndex;
         }
 
         return flag;
     }
 
-    private boolean parseIfBlock() {
+    private boolean parseIfBlock(Node parent) {
 
         int fallbackIndex = tokenIndex;
 
-        boolean isValid = checkTerminal("begin") && parseSts() && parseElseBlock() && checkTerminal("end");
+        Node node = addNewNonTerminalToParent(parent,"ifblock");
+
+        boolean isValid = checkTerminal(node,"begin") && parseSts(node) && parseElseBlock(node) && checkTerminal(node,"end");
+
+        if (isValid) return true;
+        parent.removeChild(node);
+
+        tokenIndex = fallbackIndex;
+        return false;
+    }
+
+    private boolean parseElseBlock(Node parent) {
+
+        Node node = addNewNonTerminalToParent(parent,"elseblock");
+
+        boolean isValid = elseBlock1(node) || nullTerminal();
+
+        if (isValid) return true;
+        parent.removeChild(node);
+        return false;
+    }
+
+    private boolean elseBlock1(Node parent) {
+
+        int fallbackIndex = tokenIndex;
+
+        boolean isValid = checkTerminal(parent,"else") && parseSts(parent) && parseElseBlock(parent);
 
         if (isValid) return true;
         tokenIndex = fallbackIndex;
         return false;
     }
 
-    private boolean parseElseBlock() {
-
-
-        boolean isValid = elseBlock1() || nullTerminal();
-
-        if (isValid) return true;
-        return false;
-    }
-
-    private boolean elseBlock1() {
+    private boolean parseBlock(Node parent) {
 
         int fallbackIndex = tokenIndex;
 
-        boolean isValid = checkTerminal("else") && parseSts() && parseElseBlock();
+        Node node = new Node(parent.getChilds().size() + 1, "block", null);
+        parent.addChild(node);
+
+        boolean isValid = checkTerminal(node, "begin") && parseSts(node) && checkTerminal(node, "end");
 
         if (isValid) return true;
+        parent.removeChild(node);
         tokenIndex = fallbackIndex;
         return false;
     }
 
-    private boolean parseBlock() {
-
-        int fallbackIndex = tokenIndex;
-
-        boolean isValid = checkTerminal("begin") && parseSts() && checkTerminal("end");
-
-        if (isValid) return true;
-        tokenIndex = fallbackIndex;
-        return false;
-    }
-
-    private boolean parseWhileSt() {
+    private boolean parseWhileSt(Node parent) {
 
 
         int fallbackIndex = tokenIndex;
-        Token token=null;
-        if(tokenIndex<tokens.size()){
+        Token token = null;
+        if (tokenIndex < tokens.size()) {
             token = tokens.get(tokenIndex);
         }
 
-        boolean whileExists = checkTerminal("while");
-        boolean isValid =whileExists  && checkTerminal("(") && parseBooleanExp() && checkTerminal(")") && parseBlock();
+        Node node = addNewNonTerminalToParent(parent, "while");
+
+        boolean whileExists = checkTerminal(node, "while");
+        boolean isValid = whileExists && checkTerminal(node, "(") && parseBooleanExp(node) && checkTerminal(node, ")") && parseBlock(node);
 
         if (isValid) return true;
         else if (whileExists) {
             failedTokens.add(new FailedTokens(token, "while syntax fail"));
             endRecovery(token);
         } else {
+            parent.removeChild(node);
             tokenIndex = fallbackIndex;
         }
         return false;
     }
 
-    private boolean parseAssignmentSt() {
+    private boolean parseAssignmentSt(Node parent) {
 
-        boolean isValid = assignment1() || assignment2();
+        Node node = addNewNonTerminalToParent(parent, "assigmentst");
+
+        boolean isValid = assignment1(node) || assignment2(node);
 
         if (isValid) return true;
+        parent.removeChild(node);
         return false;
 
     }
 
-    private boolean assignment1() {
+    private boolean assignment1(Node parent) {
 
         int fallbackIndex = tokenIndex;
 
-        boolean isValid = checkTerminal("ID") && checkTerminal("=") && parseArithmeticExp() && checkTerminal(";");
+        boolean isValid = checkTerminal(parent, "ID") && checkTerminal(parent, "=") && parseArithmeticExp(parent) && checkTerminal(parent, ";");
 
         if (isValid) return true;
         tokenIndex = fallbackIndex;
         return false;
     }
 
-    private boolean assignment2() {
+    private boolean assignment2(Node parent) {
 
         int fallbackIndex = tokenIndex;
 
-        boolean isValid = checkTerminal("ID") && checkTerminal(";");
+        boolean isValid = checkTerminal(parent, "ID") && checkTerminal(parent, ";");
 
         if (isValid) return true;
         tokenIndex = fallbackIndex;
         return false;
     }
 
-    private boolean parseReturnSt() {
+    private boolean parseReturnSt(Node parent) {
 
+        Node node = addNewNonTerminalToParent(parent, "returnst");
 
-        boolean isValid = returnSt1() || returnSt2();
+        boolean isValid = returnSt1(node) || returnSt2(node);
 
         if (isValid) return true;
+        parent.removeChild(node);
         return false;
     }
 
-    private boolean returnSt1() {
+    private boolean returnSt1(Node parent) {
 
         int fallbackIndex = tokenIndex;
 
-        boolean isValid = checkTerminal("return") && parseArithmeticExp() && checkTerminal(";");
+        boolean isValid = checkTerminal(parent, "return") && parseArithmeticExp(parent) && checkTerminal(parent, ";");
 
         if (isValid) return true;
         tokenIndex = fallbackIndex;
         return false;
     }
 
-    private boolean returnSt2() {
+    private boolean returnSt2(Node parent) {
 
         int fallbackIndex = tokenIndex;
 
-        boolean isValid = checkTerminal("return") && checkTerminal(";");
+        boolean isValid = checkTerminal(parent, "return") && checkTerminal(parent, ";");
 
         if (isValid) return true;
         tokenIndex = fallbackIndex;
@@ -348,37 +404,47 @@ public class Parser {
     }
 
 
-    private boolean parseBooleanExp() {
+    private boolean parseBooleanExp(Node parent) {
 
+        Node node = addNewNonTerminalToParent(parent, "booleanexp");
 
-        boolean isValid = parseArithmeticExp() && parseBoolop() && parseArithmeticExp();
+        boolean isValid = parseArithmeticExp(node) && parseBoolop(node) && parseArithmeticExp(node);
 
         if (isValid) return true;
+
+        parent.removeChild(node);
+
         return false;
     }
 
-    private boolean parseBoolop() {
+    private boolean parseBoolop(Node parent) {
 
         int fallbackIndex = tokenIndex;
+        Node node = addNewNonTerminalToParent(parent, "boolop");
 
-        boolean isValid = checkTerminal(">") || checkTerminal("<") || checkTerminal("==") || checkTerminal("<=") || checkTerminal(">=") || checkTerminal("!=");
+        boolean isValid = checkTerminal(node, ">") || checkTerminal(node, "<") || checkTerminal(node, "==") || checkTerminal(node, "<=") || checkTerminal(node, ">=") || checkTerminal(node, "!=");
 
         if (isValid) return true;
         tokenIndex = fallbackIndex;
+        parent.removeChild(node);
         return false;
     }
 
-    private boolean parseFuncSt() {
+    private boolean parseFuncSt(Node parent) {
+
+
+        Node node = new Node(parent.getChilds().size() + 1, "funcst", null);
+        root.addChild(node);
 
         int fallbackIndex = tokenIndex;
-        Token token=null;
-        if(tokenIndex<tokens.size()){
+        Token token = null;
+        if (tokenIndex < tokens.size()) {
             token = tokens.get(tokenIndex);
         }
         boolean flag = false;
 
-        boolean funcExists = checkTerminal("func");
-        boolean isValid = funcExists && (funcst2() || funcst1());
+        boolean funcExists = checkTerminal(node, "func");
+        boolean isValid = funcExists && (funcst2(node) || funcst1(node));
 
         if (isValid) return true;
         else if (funcExists) {
@@ -387,14 +453,15 @@ public class Parser {
             flag = true;
         } else {
             tokenIndex = fallbackIndex;
+            parent.removeChild(node);
         }
         return flag;
     }
 
-    private boolean funcst2() {
+    private boolean funcst2(Node parent) {
 
         int fallbackIndex = tokenIndex;
-        boolean isValid =  checkTerminal("ID") && checkTerminal("(") && checkTerminal(")") && checkTerminal(":") && parseType() && parseBlock();
+        boolean isValid = checkTerminal(parent, "ID") && checkTerminal(parent, "(") && checkTerminal(parent, ")") && checkTerminal(parent, ":") && parseType(parent) && parseBlock(parent);
 
         if (isValid) return true;
         tokenIndex = fallbackIndex;
@@ -402,59 +469,67 @@ public class Parser {
 
     }
 
-    private boolean funcst1(){
+    private boolean funcst1(Node parent) {
         int fallbackIndex = tokenIndex;
 
-        boolean isValid = checkTerminal("ID") && checkTerminal("(") && parseParams() && checkTerminal(")") && checkTerminal(":") && parseType() && parseBlock();
+        boolean isValid = checkTerminal(parent, "ID") && checkTerminal(parent, "(") && parseParams(parent) && checkTerminal(parent, ")") && checkTerminal(parent, ":") && parseType(parent) && parseBlock(parent);
 
-        if(isValid) return true;
+        if (isValid) return true;
 
         tokenIndex = fallbackIndex;
         return false;
 
     }
 
-    private boolean parseParams() {
+    private boolean parseParams(Node parent) {
 
-        boolean isValid = params1() || parseFuncDecl();
+        Node node = new Node(parent.getChilds().size() + 1, "params", null);
+        parent.addChild(node);
+
+        boolean isValid = params1(node) || parseFuncDecl(node);
 
         if (isValid) return true;
+        parent.removeChild(node);
         return false;
     }
 
-    private boolean params1() {
+    private boolean params1(Node parent) {
 
         int fallbackIndex = tokenIndex;
 
-        boolean isValid = parseFuncDecl() && checkTerminal(",") && parseParams();
+        boolean isValid = parseFuncDecl(parent) && checkTerminal(parent, ",") && parseParams(parent);
 
         if (isValid) return true;
         tokenIndex = fallbackIndex;
         return false;
     }
 
-    private boolean parseFuncDecl() {
+    private boolean parseFuncDecl(Node parent) {
 
+        Node node = addNewNonTerminalToParent(parent, "funcdecl");
 
-        boolean isValid = funcDecl("int") || funcDecl("float") || funcDecl("bool") || funcDecl("char");
+        boolean isValid = funcDecl(node, "int") || funcDecl(node, "float") || funcDecl(node, "bool") || funcDecl(node, "char");
 
         if (isValid) return true;
+        parent.removeChild(node);
         return false;
     }
 
-    private boolean parseDecl() {
+    private boolean parseDecl(Node parent) {
 
+        Node node = addNewNonTerminalToParent(parent, "decl");
 
-        boolean isValid = decl("int") || decl("float") || decl("bool") || decl("char");
+        boolean isValid = decl(node, "int") || decl(node, "float") || decl(node, "bool") || decl(node, "char");
 
         if (isValid) return true;
+        parent.removeChild(node);
         return false;
     }
 
-    private boolean decl(String type) {
+    private boolean decl(Node parent, String type) {
         int fallbackIndex = tokenIndex;
 
-        boolean isValid = checkTerminal(type) && parseAssignmentSt();
+        boolean isValid = checkTerminal(parent, type) && parseAssignmentSt(parent);
 
         if (isValid) return true;
         tokenIndex = fallbackIndex;
@@ -463,146 +538,173 @@ public class Parser {
     }
 
 
-    private boolean funcDecl(String type) {
+    private boolean funcDecl(Node parent, String type) {
 
         int fallbackIndex = tokenIndex;
 
-        boolean isValid = checkTerminal(type) && checkTerminal("ID");
+        Node node = new Node(parent.getChilds().size() + 1, "funcdecl", null);
+        parent.addChild(node);
+        boolean isValid = checkTerminal(node, type) && checkTerminal(node, "ID");
+
+        if (isValid) return true;
+        parent.removeChild(node);
+        tokenIndex = fallbackIndex;
+        return false;
+    }
+
+    private boolean parseType(Node parent) {
+
+        Node node = new Node(parent.getChilds().size() + 1, "type", null);
+        parent.addChild(node);
+
+        boolean isValid = checkTerminal(node, "int") || checkTerminal(node, "float") || checkTerminal(node, "void") || checkTerminal(node, "bool") || checkTerminal(node, "char");
+
+        if (!isValid) {
+            node.removeChild(node);
+        }
+        return isValid;
+    }
+
+    private boolean parseArithmeticExp(Node parent) {
+
+        Node node = addNewNonTerminalToParent(parent, "arithmeticexp");
+
+        boolean isValid = parseArithmetic1(node) || parseArithmetic2(node) || parseArithmetic3(node) || parseArithmetic4(node) || parseArithmetic5(node) || parseMultExp(node);
+        if (isValid) return true;
+        parent.removeChild(node);
+        return false;
+    }
+
+    private boolean parseArithmetic1(Node parent) {
+
+        int fallbackIndex = tokenIndex;
+        boolean isValid = parseMultExp(parent) && checkTerminal(parent, "and") && parseArithmeticExp(parent);
+        if (isValid) return true;
+        tokenIndex = fallbackIndex;
+        return false;
+    }
+
+    private boolean parseArithmetic2(Node parent) {
+        int fallbackIndex = tokenIndex;
+        boolean isValid = parseMultExp(parent) && checkTerminal(parent,"or") && parseArithmeticExp(parent);
+        if (isValid) return true;
+        tokenIndex = fallbackIndex;
+        return false;
+    }
+
+    private boolean parseArithmetic3(Node parent) {
+        int fallbackIndex = tokenIndex;
+        boolean isValid = parseMultExp(parent) && checkTerminal(parent,"-") && parseArithmeticExp(parent);
+        if (isValid) return true;
+        tokenIndex = fallbackIndex;
+        return false;
+    }
+
+    private boolean parseArithmetic4(Node parent) {
+        int fallbackIndex = tokenIndex;
+        boolean isValid = parseMultExp(parent) && checkTerminal(parent,"+") && parseArithmeticExp(parent);
+        if (isValid) return true;
+        tokenIndex = fallbackIndex;
+        return false;
+    }
+
+    private boolean parseArithmetic5(Node parent) {
+        int fallbackIndex = tokenIndex;
+
+        boolean isValid = parseMultExp(parent) && checkTerminal(parent,"%") && parseArithmeticExp(parent);
+        if (isValid) return true;
+        tokenIndex = fallbackIndex;
+        return false;
+    }
+
+    private boolean parseFuncCallParams(Node parent) {
+
+        Node node = addNewNonTerminalToParent(parent, "funccallparams");
+
+        boolean isValid = funcCallParams1(node) || parseSimpleExp(node);
+        if (isValid) return true;
+        parent.removeChild(node);
+        return false;
+    }
+
+    private boolean funcCallParams1(Node parent) {
+
+        int fallbackIndex = tokenIndex;
+
+        boolean isValid = parseSimpleExp(parent) && checkTerminal(parent, ",") && parseFuncCallParams(parent);
 
         if (isValid) return true;
         tokenIndex = fallbackIndex;
         return false;
     }
 
-    private boolean parseType() {
-        return checkTerminal("int") || checkTerminal("float") || checkTerminal("void") || checkTerminal("bool") || checkTerminal("char");
-    }
-
-    private boolean parseArithmeticExp() {
-        boolean isValid = parseArithmetic1() || parseArithmetic2() || parseArithmetic3() || parseArithmetic4() || parseArithmetic5() || parseMultExp();
+    private boolean parseMultExp(Node parent) {
+        Node node = addNewNonTerminalToParent(parent, "multexp");
+        boolean isValid = parseMultExp1(node) || parseMultExp2(node) || parseSimpleExp(node);
         if (isValid) return true;
+        parent.removeChild(node);
         return false;
     }
 
-    private boolean parseArithmetic1() {
+    private boolean parseMultExp1(Node parent) {
         int fallbackIndex = tokenIndex;
-        boolean isValid = parseMultExp() && checkTerminal("and") && parseArithmeticExp();
+
+        boolean isValid = parseSimpleExp(parent) && checkTerminal(parent, "*") && parseMultExp(parent);
         if (isValid) return true;
         tokenIndex = fallbackIndex;
         return false;
     }
 
-    private boolean parseArithmetic2() {
+    private boolean parseMultExp2(Node parent) {
+
         int fallbackIndex = tokenIndex;
-        boolean isValid = parseMultExp() && checkTerminal("or") && parseArithmeticExp();
+        boolean isValid = parseSimpleExp(parent) && checkTerminal(parent, "/") && parseMultExp(parent);
         if (isValid) return true;
         tokenIndex = fallbackIndex;
         return false;
     }
 
-    private boolean parseArithmetic3() {
+    private boolean parseSimpleExp(Node parent) {
         int fallbackIndex = tokenIndex;
-        boolean isValid = parseMultExp() && checkTerminal("-") && parseArithmeticExp();
+        Node node = addNewNonTerminalToParent(parent, "simpleexp");
+
+        boolean isValid = parseFuncCallExp(node) || checkTerminal(node, "ID") || checkTerminal(node, "INTNUM") || checkTerminal(node, "FLOATNUM") || checkTerminal(node, "BOOLVAL")
+                || checkTerminal(node, "CHARACTER") || parseSimpleExp1(node);
+        if (isValid) return true;
+        parent.removeChild(node);
+        tokenIndex = fallbackIndex;
+        return false;
+    }
+
+    private boolean parseSimpleExp1(Node parent) {
+        int fallbackIndex = tokenIndex;
+        boolean isValid = checkTerminal(parent, "(") && parseArithmeticExp(parent) && checkTerminal(parent, ")");
         if (isValid) return true;
         tokenIndex = fallbackIndex;
         return false;
     }
 
-    private boolean parseArithmetic4() {
+    private boolean parseFuncCallExp1(Node parent) {
         int fallbackIndex = tokenIndex;
-        boolean isValid = parseMultExp() && checkTerminal("+") && parseArithmeticExp();
+        boolean isValid = checkTerminal(parent, "ID") && checkTerminal(parent, "(") && parseFuncCallParams(parent) && checkTerminal(parent, ")");
         if (isValid) return true;
         tokenIndex = fallbackIndex;
         return false;
     }
 
-    private boolean parseArithmetic5() {
+    private boolean parseFuncCallExp2(Node parent) {
         int fallbackIndex = tokenIndex;
-
-        boolean isValid = parseMultExp() && checkTerminal("%") && parseArithmeticExp();
+        boolean isValid = checkTerminal(parent, "ID") && checkTerminal(parent, "(") && checkTerminal(parent, ")");
         if (isValid) return true;
         tokenIndex = fallbackIndex;
         return false;
     }
 
-    private boolean parseFuncCallParams() {
-
-
-        boolean isValid = funcCallParams1() || parseSimpleExp();
+    private boolean parseFuncCallExp(Node parent) {
+        Node node = addNewNonTerminalToParent(parent, "funccalexp");
+        boolean isValid = parseFuncCallExp1(node) || parseFuncCallExp2(node);
         if (isValid) return true;
-        return false;
-    }
-
-    private boolean funcCallParams1() {
-
-        int fallbackIndex = tokenIndex;
-
-        boolean isValid = parseSimpleExp() && checkTerminal(",") && parseFuncCallParams();
-
-        if (isValid) return true;
-        tokenIndex = fallbackIndex;
-        return false;
-    }
-
-    private boolean parseMultExp() {
-        boolean isValid = parseMultExp1() || parseMultExp2() || parseSimpleExp();
-        if (isValid) return true;
-        return false;
-    }
-
-    private boolean parseMultExp1() {
-        int fallbackIndex = tokenIndex;
-        boolean isValid = parseSimpleExp() && checkTerminal("*") && parseMultExp();
-        if (isValid) return true;
-        tokenIndex = fallbackIndex;
-        return false;
-    }
-
-    private boolean parseMultExp2() {
-        int fallbackIndex = tokenIndex;
-        boolean isValid = parseSimpleExp() && checkTerminal("/") && parseMultExp();
-        if (isValid) return true;
-        tokenIndex = fallbackIndex;
-        return false;
-    }
-
-    private boolean parseSimpleExp() {
-        int fallbackIndex = tokenIndex;
-        boolean isValid = parseFuncCallExp() || checkTerminal("ID") || checkTerminal("INTNUM") || checkTerminal("FLOATNUM") || checkTerminal("BOOLVAL")
-                || checkTerminal("CHARACTER") || parseSimpleExp1();
-        if (isValid) return true;
-        tokenIndex = fallbackIndex;
-        return false;
-    }
-
-    private boolean parseSimpleExp1() {
-        int fallbackIndex = tokenIndex;
-        boolean isValid = checkTerminal("(") && parseArithmeticExp() && checkTerminal(")");
-        if (isValid) return true;
-        tokenIndex = fallbackIndex;
-        return false;
-    }
-
-    private boolean parseFuncCallExp1() {
-        int fallbackIndex = tokenIndex;
-        boolean isValid = checkTerminal("ID") && checkTerminal("(") && parseFuncCallParams() && checkTerminal(")");
-        if (isValid) return true;
-        tokenIndex = fallbackIndex;
-        return false;
-    }
-
-    private boolean parseFuncCallExp2() {
-        int fallbackIndex = tokenIndex;
-        boolean isValid = checkTerminal("ID") && checkTerminal("(") && checkTerminal(")");
-        if (isValid) return true;
-        tokenIndex = fallbackIndex;
-        return false;
-    }
-
-    private boolean parseFuncCallExp() {
-
-        boolean isValid = parseFuncCallExp1() || parseFuncCallExp2();
-        if (isValid) return true;
+        parent.removeChild(node);
         return false;
     }
 }

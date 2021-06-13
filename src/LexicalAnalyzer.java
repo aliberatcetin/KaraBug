@@ -29,30 +29,37 @@ public class LexicalAnalyzer {
         return false;
     }
 
-    public String getValueOfConstant(String string) {
+    public Token getValueOfConstant(String string, int line, int column) {
         Pattern pattern = Pattern.compile("[-]?[0-9]+");
         Matcher matcher = pattern.matcher(string);
         if (matcher.matches()) {
-            return "INTNUM";
+            return new Token(TokenType.INTNUM, string, line, column);
         }
         pattern = Pattern.compile("[-]?[0-9]+\\.[0-9]+");
         matcher = pattern.matcher(string);
         if (matcher.matches()) {
-            return "FLOATNUM";
+            return new Token(TokenType.FLOATNUM, string, line, column);
         }
         if (string.equals("true") || string.equals("false")) {
-            return "BOOLVAL";
+            return new Token(TokenType.BOOLVAL, string, line, column);
         }
         pattern = Pattern.compile("['].[']");
         matcher = pattern.matcher(string);
         if (matcher.matches()) {
-            return "CHARACTER";
+            return new Token(TokenType.CHARACTER, string, line, column);
+        }
+        pattern = Pattern.compile("[\"].[\"]");
+        matcher = pattern.matcher(string);
+        if (matcher.matches()) {
+            return new Token(TokenType.STRING, string, line, column);
         }
         pattern = Pattern.compile("[a-zA-Z]([a-zA-Z0-9])*");
         matcher = pattern.matcher(string);
         if (matcher.matches()) {
-            return "ID";
+            return new Token(TokenType.ID,string,line,column);
         }
+
+
 
         return null;
     }
@@ -60,22 +67,22 @@ public class LexicalAnalyzer {
     public Token getTokenFromString(String string, int line, int column) throws LexicalException {
         TokenType tokenType = Constants.tokenDict.get(string);
         if (tokenType != null) {
-            return new Token(tokenType, string,line,column);
+            return new Token(tokenType, string, line, column);
         }
 
-        String constantValueType = getValueOfConstant(string);
-        if(constantValueType!=null){
-            return new Token(TokenType.NUMBER,constantValueType,line,column);
+        Token constantValueType = getValueOfConstant(string, line, column);
+        if (constantValueType != null) {
+            return constantValueType;
         }
 
 
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("Unexcepted literal: "+ string);
-        stringBuilder.append(" At Line: "+String.valueOf(line));
-        stringBuilder.append("Column: "+String.valueOf(column));
+        stringBuilder.append("Unexcepted literal: " + string);
+        stringBuilder.append(" At Line: " + String.valueOf(line));
+        stringBuilder.append("Column: " + String.valueOf(column));
         fails.add(stringBuilder.toString());
 
-        return new Token(TokenType.FAULT,"fault",line,column);
+        return new Token(TokenType.FAULT, "fault", line, column);
     }
 
     public ArrayList<Token> getTokensFromLine(String string, int lineNumber) throws LexicalException {
@@ -130,8 +137,8 @@ public class LexicalAnalyzer {
             lineNumber++;
         }
 
-        if(fails.size()>0){
-            for(String error:fails){
+        if (fails.size() > 0) {
+            for (String error : fails) {
                 System.out.println(error);
             }
             throw new LexicalException("Code fails to compile with several errors");

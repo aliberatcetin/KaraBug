@@ -7,6 +7,5 @@ public class Main {
         ArrayList<Token> tokens = lexicalAnalyzer.generateTokens();
         Parser parser = new Parser();
         parser.parse(tokens);
-
     }
 }

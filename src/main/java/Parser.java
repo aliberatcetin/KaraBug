@@ -236,7 +236,6 @@ public class Parser {
     private boolean parseSt(Node parent) {
 
         Node node = addNewNonTerminalToParent(parent, "st");
-        parent.addChild(node);
 
         boolean isValid = parseIfSt(node) || parseWhileSt(node) || parseAssignmentSt(node) || parseReturnSt(node) || parseFuncCallSt(node);
 

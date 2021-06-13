@@ -1,6 +1,7 @@
 import java.util.ArrayList;
+import java.util.Collections;
 
-public class Node {
+public class Node implements Comparable<Node>{
 
     private int order;
     private String nonTerminal;
@@ -51,6 +52,36 @@ public class Node {
     public void removeChild(Node node){
         childs.remove(node);
     }
+
+    public void clearChild(){
+        childs.clear();
+    }
+
+    public void dfs(Node node){
+        if(node.getTerminal()!=null){
+            System.out.print(node.getTerminal().getValue()+" ");
+            return;
+        }
+
+        ArrayList<Node> childs = node.getChilds();
+        Collections.sort(childs);
+        for(Node n:childs){
+            dfs(n);
+        }
+    }
+
+    public void print(){
+        dfs(this);
+        System.out.println();
+    }
+
+    @Override
+    public int compareTo(Node o) {
+        if(this.getOrder()>o.getOrder()) return 1;
+        else if(this.getOrder()==o.getOrder()) return  0;
+        return -1;
+    }
+
 
 }
 

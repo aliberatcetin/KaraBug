@@ -1,7 +1,5 @@
-import java.sql.SQLOutput;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+
 
 class FailedTokens {
     Token token;
@@ -45,9 +43,11 @@ public class Parser {
             semiColonRecovery(tokens.get(tokenIndex));
             if (tokenIndex < tokens.size()) parse(tokens);
             terminate();
+
         }
 
         if (isValidProgram && tokenIndex == tokens.size() && failedTokens.size() == 0) {
+            root.print();
             System.out.println("Program compiled successfully");
         } else {
             terminate();
@@ -110,6 +110,9 @@ public class Parser {
     }
 
 
+
+
+
     private boolean checkTerminal(Node parent, String terminal) {
 
 
@@ -144,12 +147,17 @@ public class Parser {
         Node node = new Node(parent.getChilds().size() + 1, "funcs", null);
         parent.addChild(node);
 
+        int prevTokenIndex = tokenIndex;
+
         boolean isValid = funcs1(node) || nullTerminal();
 
+        if(prevTokenIndex==tokenIndex){
+            parent.removeChild(node);
+        }
 
         if (isValid) return true;
 
-        parent.removeChild(node);
+
 
         return false;
     }
@@ -161,6 +169,7 @@ public class Parser {
 
         if (isValid) return true;
 
+        parent.clearChild();
 
         return false;
     }
@@ -170,12 +179,16 @@ public class Parser {
         Node node = new Node(parent.getChilds().size() + 1, "decls", null);
         parent.addChild(node);
 
+        int prev = tokenIndex;
+
         boolean isValid = decls1(node) || nullTerminal();
+
+        if(prev==tokenIndex)
+            parent.removeChild(node);
 
         if (isValid) return true;
 
 
-        parent.removeChild(node);
 
         return false;
 
@@ -186,6 +199,9 @@ public class Parser {
         boolean isValid = parseDecl(parent) && parseDecls(parent);
 
         if (isValid) return true;
+
+        parent.clearChild();
+
         return false;
     }
 
@@ -194,9 +210,15 @@ public class Parser {
         Node node = new Node(parent.getChilds().size() + 1, "sts", null);
         parent.addChild(node);
 
+        int prev = tokenIndex;
+
         boolean isValid = sts1(node) || nullTerminal();
+
+        if(prev==tokenIndex)
+            parent.removeChild(node);
+
         if (isValid) return true;
-        parent.removeChild(node);
+
         return false;
     }
 
@@ -205,6 +227,9 @@ public class Parser {
         boolean isValid = parseSt(parent) && parseSts(parent);
 
         if (isValid) return true;
+
+        parent.clearChild();
+
         return false;
     }
 
@@ -278,10 +303,15 @@ public class Parser {
 
         Node node = addNewNonTerminalToParent(parent,"elseblock");
 
+        int prev= tokenIndex;
+
         boolean isValid = elseBlock1(node) || nullTerminal();
 
+
+        if(prev==tokenIndex)
+            parent.removeChild(node);
         if (isValid) return true;
-        parent.removeChild(node);
+
         return false;
     }
 
@@ -293,6 +323,7 @@ public class Parser {
 
         if (isValid) return true;
         tokenIndex = fallbackIndex;
+        parent.clearChild();
         return false;
     }
 
@@ -356,6 +387,7 @@ public class Parser {
 
         if (isValid) return true;
         tokenIndex = fallbackIndex;
+        parent.clearChild();
         return false;
     }
 
@@ -367,6 +399,7 @@ public class Parser {
 
         if (isValid) return true;
         tokenIndex = fallbackIndex;
+        parent.clearChild();
         return false;
     }
 
@@ -389,6 +422,7 @@ public class Parser {
 
         if (isValid) return true;
         tokenIndex = fallbackIndex;
+        parent.clearChild();
         return false;
     }
 
@@ -400,6 +434,7 @@ public class Parser {
 
         if (isValid) return true;
         tokenIndex = fallbackIndex;
+        parent.clearChild();
         return false;
     }
 
@@ -434,7 +469,7 @@ public class Parser {
 
 
         Node node = new Node(parent.getChilds().size() + 1, "funcst", null);
-        root.addChild(node);
+        parent.addChild(node);
 
         int fallbackIndex = tokenIndex;
         Token token = null;
@@ -465,6 +500,7 @@ public class Parser {
 
         if (isValid) return true;
         tokenIndex = fallbackIndex;
+        parent.clearChild();
         return false;
 
     }
@@ -477,6 +513,7 @@ public class Parser {
         if (isValid) return true;
 
         tokenIndex = fallbackIndex;
+        parent.clearChild();
         return false;
 
     }
@@ -501,6 +538,7 @@ public class Parser {
 
         if (isValid) return true;
         tokenIndex = fallbackIndex;
+        parent.clearChild();
         return false;
     }
 
@@ -533,6 +571,7 @@ public class Parser {
 
         if (isValid) return true;
         tokenIndex = fallbackIndex;
+        parent.clearChild();
 
         return false;
     }
@@ -581,6 +620,7 @@ public class Parser {
         boolean isValid = parseMultExp(parent) && checkTerminal(parent, "and") && parseArithmeticExp(parent);
         if (isValid) return true;
         tokenIndex = fallbackIndex;
+        parent.clearChild();
         return false;
     }
 
@@ -589,6 +629,7 @@ public class Parser {
         boolean isValid = parseMultExp(parent) && checkTerminal(parent,"or") && parseArithmeticExp(parent);
         if (isValid) return true;
         tokenIndex = fallbackIndex;
+        parent.clearChild();
         return false;
     }
 
@@ -597,6 +638,7 @@ public class Parser {
         boolean isValid = parseMultExp(parent) && checkTerminal(parent,"-") && parseArithmeticExp(parent);
         if (isValid) return true;
         tokenIndex = fallbackIndex;
+        parent.clearChild();
         return false;
     }
 
@@ -605,6 +647,7 @@ public class Parser {
         boolean isValid = parseMultExp(parent) && checkTerminal(parent,"+") && parseArithmeticExp(parent);
         if (isValid) return true;
         tokenIndex = fallbackIndex;
+        parent.clearChild();
         return false;
     }
 
@@ -614,6 +657,7 @@ public class Parser {
         boolean isValid = parseMultExp(parent) && checkTerminal(parent,"%") && parseArithmeticExp(parent);
         if (isValid) return true;
         tokenIndex = fallbackIndex;
+        parent.clearChild();
         return false;
     }
 
@@ -635,6 +679,7 @@ public class Parser {
 
         if (isValid) return true;
         tokenIndex = fallbackIndex;
+        parent.clearChild();
         return false;
     }
 
@@ -652,6 +697,7 @@ public class Parser {
         boolean isValid = parseSimpleExp(parent) && checkTerminal(parent, "*") && parseMultExp(parent);
         if (isValid) return true;
         tokenIndex = fallbackIndex;
+        parent.clearChild();
         return false;
     }
 
@@ -661,6 +707,7 @@ public class Parser {
         boolean isValid = parseSimpleExp(parent) && checkTerminal(parent, "/") && parseMultExp(parent);
         if (isValid) return true;
         tokenIndex = fallbackIndex;
+        parent.clearChild();
         return false;
     }
 
@@ -681,6 +728,7 @@ public class Parser {
         boolean isValid = checkTerminal(parent, "(") && parseArithmeticExp(parent) && checkTerminal(parent, ")");
         if (isValid) return true;
         tokenIndex = fallbackIndex;
+        parent.clearChild();
         return false;
     }
 
@@ -689,6 +737,7 @@ public class Parser {
         boolean isValid = checkTerminal(parent, "ID") && checkTerminal(parent, "(") && parseFuncCallParams(parent) && checkTerminal(parent, ")");
         if (isValid) return true;
         tokenIndex = fallbackIndex;
+        parent.clearChild();
         return false;
     }
 
@@ -697,6 +746,7 @@ public class Parser {
         boolean isValid = checkTerminal(parent, "ID") && checkTerminal(parent, "(") && checkTerminal(parent, ")");
         if (isValid) return true;
         tokenIndex = fallbackIndex;
+        parent.clearChild();
         return false;
     }
 
